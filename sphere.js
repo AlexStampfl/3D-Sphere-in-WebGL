@@ -28,15 +28,18 @@ function main() {
         varying vec3 vLighting;
 
         void main() {
-            gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(aVertexPosition, 1.0);
+        gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(aVertexPosition, 1.0);
 
-            vec3 transformedNormal = normalize(uNormalMatrix * aNormal);
+        // Transform the normal to world space
+        vec3 transformedNormal = normalize(uNormalMatrix * aNormal);
 
-            vec3 lightDirection = normalize(vec3(0.5, 0.7, 1.0));
-            float directional = max(dot(transformedNormal, lightDirection), 0.0);
-            vec3 ambientLight = vec3(0.3, 0.3, 0.3);
-            vec3 directionalLight = vec3(1.0, 1.0, 1.0) * directional;
-            vLighting = ambientLight + directionalLight;
+        // Lighting calculation
+        vec3 lightDirection = normalize(vec3(0.5, 0.7, 1.0));
+        float directional = max(dot(transformedNormal, lightDirection), 0.0);
+
+        vec3 ambientLight = vec3(0.3, 0.3, 0.3);
+        vec3 directionalLight = vec3(1.0, 1.0, 1.0) * directional;
+        vLighting = ambientLight + directionalLight;
 }
     `;
 //     // Vertex Shader
@@ -55,15 +58,26 @@ function main() {
         varying vec3 vLighting;
 
         void main() {
-            gl_FragColor = vec4(vLighting, 1.0);
+            vec3 copperColor = vec3(0.8, 0.5, 0.3);
+            gl_FragColor = vec4(vLighting * copperColor, 1.0);
 }
     `;
+//     const fragmentShader = `
+//         precision mediump float;
+//         varying vec3 vLighting;
+
+//         void main() {
+//             gl_FragColor = vec4(vLighting, 1.0);
+// }
+//     `;
 //     const fragmentShader = `
 //         precision mediump float;
 //         void main() {
 //             gl_FragColor = vec4(0.8, 0.5, 0.3, 1.0);
 // }
 //     `;
+
+    
 
     // Compile shaders
     const vShader = compileShader(gl, gl.VERTEX_SHADER, vertexShader);
@@ -96,13 +110,53 @@ function main() {
     // Recursively divide tetrahedron
     tetrahedron(va, vb, vc, vd, numTimesToSubdivide);
 
+    // testing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    const normalBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
+
+    // ~~~~~~~~~~~~~~~~~~This code block causes app to break ~~~~~~~~~~~~~~~~~~~~~~
+    
+    const aNormal = gl.getAttribLocation(shaderProgram, "aNormal");
+    if (aNormal === -1) {
+        console.error("Attribute aNormal not found in shader program.")
+    } else {
+        gl.vertexAttribPointer(aNormal, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(aNormal);
+    }
+    gl.vertexAttribPointer(aNormal, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(aNormal);
+
+    
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
     // Create buffer
     const positionBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 
+    // Set up uniform for normal matrix
+    // testing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    const uNormalMatrix = gl.getUniformLocation(shaderProgram, "uNormalMatrix");
+    if (!uNormalMatrix) {
+    console.error("Uniform uNormalMatrix not found in the shader program.");
+    }
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
     // Set up shader attributes and uniforms
     const aVertexPosition = gl.getAttribLocation(shaderProgram, "aVertexPosition");
+    // testing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if (aVertexPosition === -1) {
+        console.error("Attribute aVertexPosition not found in the shader program.");
+    } else {
+        gl.vertexAttribPointer(aVertexPosition, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(aVertexPosition);
+    }
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
     gl.vertexAttribPointer(aVertexPosition, 3, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(aVertexPosition);
 
@@ -122,24 +176,43 @@ function main() {
 
     // Render function
     function render() {
-        
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-        // positions the object in the world, move world in opposite direciton of where camera is looking
+    
         const modelViewMatrix = mat4.create();
-        mat4.translate(modelViewMatrix, modelViewMatrix, [0.0, 0.0, -5.0]); // Dial object back
-        // mat4.rotateY(modelViewMatrix, modelViewMatrix, Math.PI / 4); // Rotate camera
+        mat4.translate(modelViewMatrix, modelViewMatrix, [0.0, 0.0, -5.0]);
         mat4.rotateY(modelViewMatrix, modelViewMatrix, angle);
-
         angle += 0.01;
-
+    
+        const normalMatrix = mat3.create();
+        mat3.normalFromMat4(normalMatrix, modelViewMatrix);
+    
+        const uNormalMatrix = gl.getUniformLocation(shaderProgram, "uNormalMatrix");
+        gl.uniformMatrix3fv(uNormalMatrix, false, normalMatrix);
+    
         gl.uniformMatrix4fv(uModelViewMatrix, false, modelViewMatrix);
-
         gl.drawArrays(gl.TRIANGLES, 0, positions.length / 3);
-
-        // Request the next frame
+    
         requestAnimationFrame(render);
     }
+    // function render() {
+        
+    //     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    //     // positions the object in the world, move world in opposite direciton of where camera is looking
+    //     const modelViewMatrix = mat4.create();
+    //     mat4.translate(modelViewMatrix, modelViewMatrix, [0.0, 0.0, -5.0]); // Dial object back
+    //     // mat4.rotateY(modelViewMatrix, modelViewMatrix, Math.PI / 4); // Rotate camera
+    //     mat4.rotateY(modelViewMatrix, modelViewMatrix, angle);
+
+    //     angle += 0.01;
+
+    //     gl.uniformMatrix4fv(uModelViewMatrix, false, modelViewMatrix);
+
+    //     gl.drawArrays(gl.TRIANGLES, 0, positions.length / 3);
+
+    //     // Request the next frame
+    //     requestAnimationFrame(render);
+    // }
     // Start rendering
     render();
 
