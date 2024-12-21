@@ -19,6 +19,8 @@ function main() {
     let theta = 45 * (Math.PI / 180);
     let phi = 6 * (Math.PI / 180);
     let subDiv = 4;
+    // let isPaused = angle += 0.0;
+    let isPaused = false;
 
     // Update radius, theta, phi & subdivisions
     document.getElementById("radiusSlider").addEventListener("input", (e) => {
@@ -33,6 +35,12 @@ function main() {
     document.getElementById("subSlider").addEventListener("input", (e) => {
         subDiv = parseInt(e.target.value);
         updateGeometry(); // Recalculate geometry
+    })
+    document.getElementById("pauseButton").addEventListener("click", () => {
+        isPaused = true;
+    });
+    document.getElementById("resumeButton").addEventListener("click", () => {
+        isPaused = false;
     })
 
 
@@ -49,18 +57,18 @@ function main() {
         varying vec3 vLighting;
 
         void main() {
-        gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(aVertexPosition, 1.0);
-
-        // Transform the normal to world space
         vec3 transformedNormal = normalize(uNormalMatrix * aNormal);
-
-        // Lighting calculation
         vec3 lightDirection = normalize(vec3(-5.0, -5.0, -10.0)); // change light direction
+        
         float directional = max(dot(transformedNormal, lightDirection), 0.0);
-
-        vec3 ambientLight = vec3(0.3, 0.3, 0.3);
+         
+        vec3 ambientLight = vec3(0.5, 0.5, 0.5);
+        // vec3 ambientLight = vec3(0.3, 0.3, 0.3);
         vec3 directionalLight = vec3(1.0, 1.0, 1.0) * directional;
         vLighting = ambientLight + directionalLight;
+
+        gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(aVertexPosition, 1.0);
+
 }
     `;
 
@@ -72,7 +80,7 @@ function main() {
             vec3 copperColor = vec3(0.8, 0.5, 0.3);
             float brightness = 1.5; // Increase brightness
             gl_FragColor = vec4(vLighting * copperColor, 1.0);
-            // vLighting = max(vLighting, vec3(0.2, 0.2, 0.2)); // Ensure a minimum brightness
+
 }
     `;
 
@@ -163,11 +171,18 @@ function main() {
     
         const modelViewMatrix = mat4.create();
         mat4.translate(modelViewMatrix, modelViewMatrix, [0.0, 0.0, -radius]); // change sphere size
+
+        if (!isPaused) {
+            angle += 0.001; // only update angle when not paused
+        }
+
         // mat4.translate(modelViewMatrix, modelViewMatrix, [0.0, 0.0, -5.0]);
         mat4.rotateY(modelViewMatrix, modelViewMatrix, angle + theta); // spins sphere around
         // mat4.rotateY(modelViewMatrix, modelViewMatrix, angle);
         mat4.rotateX(modelViewMatrix, modelViewMatrix, phi); // tils sphere slightly
-        angle += 0.002; // adjust speed of rotation
+        angle += 0.0005; // adjust speed of rotation
+
+
     
         const normalMatrix = mat3.create();
         mat3.normalFromMat4(normalMatrix, modelViewMatrix);
