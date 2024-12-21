@@ -9,7 +9,8 @@ function main() {
         return;
     }
 
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clearColor(0.3, 0.0, 0.0, 1.0);
+    // gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.enable(gl.DEPTH_TEST);
     gl.viewport(0, 0, canvas.width, canvas.height);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -35,10 +36,10 @@ function main() {
         subDiv = parseInt(e.target.value);
         updateGeo();
     })
-    document.getElementById("pauseBtn").addEventListener("click", () => {
+    document.getElementById("haltBtn").addEventListener("click", () => {
         isPaused = true;
     });
-    document.getElementById("resumeBtn").addEventListener("click", () => {
+    document.getElementById("spinBtn").addEventListener("click", () => {
         isPaused = false;
     })
 
@@ -46,8 +47,8 @@ function main() {
 
     // Vertex Shader
     const vertexShader = `
-        attribute vec3 aVertexPosition;
-        attribute vec3 aNormal;
+        attribute vec3 avPos;
+        attribute vec3 aNorm;
 
         uniform mat4 uModelViewMatrix;
         uniform mat4 uProjMatrix;
@@ -56,7 +57,7 @@ function main() {
         varying vec3 vLighting;
 
         void main() {
-        vec3 transformedNormal = normalize(uNormalMatrix * aNormal);
+        vec3 transformedNormal = normalize(uNormalMatrix * aNorm);
         vec3 lightDirection = normalize(vec3(-5.0, -5.0, -10.0)); // change light direction
         
         float directional = max(dot(transformedNormal, lightDirection), 0.0);
@@ -66,7 +67,7 @@ function main() {
         vec3 directionalLight = vec3(1.0, 1.0, 1.0) * directional;
         vLighting = ambientLight + directionalLight;
 
-        gl_Position = uProjMatrix * uModelViewMatrix * vec4(aVertexPosition, 1.0);
+        gl_Position = uProjMatrix * uModelViewMatrix * vec4(avPos, 1.0);
 
 }
     `;
@@ -118,15 +119,15 @@ function main() {
     gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(norms), gl.STATIC_DRAW);
     
-    const aNormal = gl.getAttribLocation(shaderProgram, "aNormal");
-    if (aNormal === -1) {
-        console.error("Attribute aNormal not found in shader program.")
+    const aNorm = gl.getAttribLocation(shaderProgram, "aNorm");
+    if (aNorm === -1) {
+        console.error("Attribute aNorm not found in shader program.")
     } else {
-        gl.vertexAttribPointer(aNormal, 3, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(aNormal);
+        gl.vertexAttribPointer(aNorm, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(aNorm);
     }
-    gl.vertexAttribPointer(aNormal, 3, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(aNormal);
+    gl.vertexAttribPointer(aNorm, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(aNorm);
 
     // Create buffer
     const posBuff = gl.createBuffer();
@@ -139,9 +140,9 @@ function main() {
     }
 
     // Set up shader attributes and uniforms
-    const aVPos = gl.getAttribLocation(shaderProgram, "aVertexPosition");
+    const aVPos = gl.getAttribLocation(shaderProgram, "avPos");
     if (aVPos === -1) {
-        console.error("Attribute aVertexPosition not found in the shader program.");
+        console.error("Attribute avPos not found in the shader program.");
     } else {
         gl.vertexAttribPointer(aVPos, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(aVPos);
@@ -211,17 +212,17 @@ function main() {
         divTri(a, c, d, n);
     }
 
-    function divTri(a, b, c, count) {
-        if (count > 0) {
-            const ab = normalize(mix(a, b, 0.5), false);
-            const ac = normalize(mix(a, c, 0.5), false);
-            const bc = normalize(mix(b, c, 0.5), false);
+    function divTri(a, b, c, level) {
+        if (level > 0) {
+            const midAB = normalize(weightedAverage(a, b, 0.5), false);
+            const midAC = normalize(weightedAverage(a, c, 0.5), false);
+            const midBC = normalize(weightedAverage(b, c, 0.5), false);
 
             // Recursively subdivide
-            divTri(a, ab, ac, count - 1);
-            divTri(ab, b, bc, count - 1);
-            divTri(bc, c, ac, count - 1);
-            divTri(ab, bc, ac, count - 1);
+            divTri(a, midAB, midAC, level - 1);
+            divTri(midAB, b, midBC, level - 1);
+            divTri(midBC, c, midAC, level - 1);
+            divTri(midAB, midBC, midAC, level - 1);
         } else {
             tri(a, b, c);
         }
@@ -241,12 +242,12 @@ function main() {
         norms.push(...normal);
     }
 
-    function mix(u, v, t) {
+    function weightedAverage(u, v, weight) {
         return [
-            u[0] * (1 - t) + v[0] * t,
-            u[1] * (1 - t) + v[1] * t,
-            u[2] * (1 - t) + v[2] * t,
-            u[3] * (1 - t) + v[3] * t,
+            u[0] * (1 - weight) + v[0] * weight,
+            u[1] * (1 - weight) + v[1] * weight,
+            u[2] * (1 - weight) + v[2] * weight,
+            u[3] * (1 - weight) + v[3] * weight,
         ];
     }
 
