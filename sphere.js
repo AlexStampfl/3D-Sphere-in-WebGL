@@ -19,20 +19,51 @@ function main() {
     // Vertex Shader
     const vertexShader = `
         attribute vec3 aVertexPosition;
+        attribute vec3 aNormal;
+
         uniform mat4 uModelViewMatrix;
         uniform mat4 uProjectionMatrix;
+        uniform mat3 uNormalMatrix;
+
+        varying vec3 vLighting;
 
         void main() {
             gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(aVertexPosition, 1.0);
+
+            vec3 transformedNormal = normalize(uNormalMatrix * aNormal);
+
+            vec3 lightDirection = normalize(vec3(0.5, 0.7, 1.0));
+            float directional = max(dot(transformedNormal, lightDirection), 0.0);
+            vec3 ambientLight = vec3(0.3, 0.3, 0.3);
+            vec3 directionalLight = vec3(1.0, 1.0, 1.0) * directional;
+            vLighting = ambientLight + directionalLight;
 }
     `;
+//     // Vertex Shader
+//     const vertexShader = `
+//         attribute vec3 aVertexPosition;
+//         uniform mat4 uModelViewMatrix;
+//         uniform mat4 uProjectionMatrix;
+
+//         void main() {
+//             gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(aVertexPosition, 1.0);
+// }
+//     `;
 
     const fragmentShader = `
         precision mediump float;
+        varying vec3 vLighting;
+
         void main() {
-            gl_FragColor = vec4(0.8, 0.5, 0.3, 1.0);
+            gl_FragColor = vec4(vLighting, 1.0);
 }
     `;
+//     const fragmentShader = `
+//         precision mediump float;
+//         void main() {
+//             gl_FragColor = vec4(0.8, 0.5, 0.3, 1.0);
+// }
+//     `;
 
     // Compile shaders
     const vShader = compileShader(gl, gl.VERTEX_SHADER, vertexShader);
