@@ -82,37 +82,42 @@ function main() {
         0.1, // Near clipping plane
         100.0 // Far clippng plane
     );
+    const uProjectionMatrix = gl.getUniformLocation(shaderProgram, "uProjectionMatrix");
+    gl.uniformMatrix4fv(uProjectionMatrix, false, projectionMatrix);
 
-    // positions the object in the world, move world in opposite direciton of where camera is looking
-    const modelViewMatrix = mat4.create();
-    mat4.translate(modelViewMatrix, modelViewMatrix, [0.0, 0.0, -5.0]); // Dial object back
-    mat4.rotateY(modelViewMatrix, modelViewMatrix, Math.PI / 4); // Rotate camera
+    const uModelViewMatrix = gl.getUniformLocation(shaderProgram, "uModelViewMatrix");
+
+    let angle = 0;
+
+    // Render function
+    function render() {
+        
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        // positions the object in the world, move world in opposite direciton of where camera is looking
+        const modelViewMatrix = mat4.create();
+        mat4.translate(modelViewMatrix, modelViewMatrix, [0.0, 0.0, -5.0]); // Dial object back
+        // mat4.rotateY(modelViewMatrix, modelViewMatrix, Math.PI / 4); // Rotate camera
+        mat4.rotateY(modelViewMatrix, modelViewMatrix, angle);
+
+        angle += 0.01;
+
+        gl.uniformMatrix4fv(uModelViewMatrix, false, modelViewMatrix);
+
+        gl.drawArrays(gl.TRIANGLES, 0, positions.length / 3);
+
+        // Request the next frame
+        requestAnimationFrame(render);
+    }
+    // Start rendering
+    render();
 
     // To simulate camera movement, rotation for panning and translation for moving camera
 
-    const uModelViewMatrix = gl.getUniformLocation(shaderProgram, "uModelViewMatrix");
-    const uProjectionMatrix = gl.getUniformLocation(shaderProgram, "uProjectionMatrix");
+    // gl.uniformMatrix4fv(uProjectionMatrix, false, projectionMatrix);
     
-    gl.uniformMatrix4fv(uModelViewMatrix, false, modelViewMatrix);
-    gl.uniformMatrix4fv(uProjectionMatrix, false, projectionMatrix);
 
     // Clear and draw
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    gl.drawArrays(gl.TRIANGLES, 0, positions.length / 3);
-
-    // helper function to compile shaders
-    function compileShader(g, type, source) {
-        const shader = gl.createShader(type);
-        gl.shaderSource(shader, source);
-        gl.compileShader(shader);
-    
-        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-            console.error("shader compilation error:", gl.getShaderInfoLog(shader));
-            gl.deleteShader(shader);
-            return null;
-        }
-        return shader
-    }
     
     function tetrahedron(a, b, c, d, n) {
         divideTriangle(a, b, c, n);
@@ -157,6 +162,20 @@ function main() {
         return useW
             ? [v[0] / len, v[1] / len, v[2] / len, v[3] / len]
             : [v[0] / len, v[1] / len, v[2] / len];
+    }
+
+    // helper function to compile shaders
+    function compileShader(g, type, source) {
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+    
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+            console.error("shader compilation error:", gl.getShaderInfoLog(shader));
+            gl.deleteShader(shader);
+            return null;
+        }
+        return shader
     }
 }
     
