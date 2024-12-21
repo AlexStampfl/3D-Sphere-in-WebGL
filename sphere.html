@@ -6,21 +6,20 @@
     <title>Document</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js"></script>
     <script src="./sphere.js" type="module"></script>
-
 </head>
 <body>
     <canvas id="gl-canvas" width="530" height="450"></canvas>
     <div>
-        <label>Radius: <input id="radiusSlider" type="range" min="1" max="10" step="0.1" value="6"></label>
+        <label>Radius: <input id="radSlider" type="range" min="1" max="10" step="0.1" value="6"></label>
         <br>
         <label>Theta: <input id="thetaSlider" type="range" min="0" max="360" value="45"></label>
         <br>
         <label>Phi: <input id="phiSlider" type="range" min="1" max="10" step="0.1" value="6"></label>
         <br>
-        <label>Subdivisions: <input id="subSlider" type="range" min="1" max="5" step="1" value="3"></label>
+        <label>Subdivisions: <input id="subDiv" type="range" min="1" max="5" step="1" value="3"></label>
         <br>
         <br>
-        <button id="pauseButton">Pause Rotation</button>&nbsp;&nbsp;&nbsp;&nbsp;<button id="resumeButton">Resume Rotation</button>
+        <button id="pauseBtn">Pause Rotation</button>&nbsp;&nbsp;&nbsp;&nbsp;<button id="resumeBtn">Resume Rotation</button>
     </div>
 </body>
 </html>
