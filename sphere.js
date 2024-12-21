@@ -1,4 +1,3 @@
-
 main();
 
 function main() {
@@ -60,6 +59,7 @@ function main() {
 
     // Array to store positions
     const positions = [];
+    const normals = [];
     const numTimesToSubdivide = 4;
 
     // Recursively divide tetrahedron
@@ -146,7 +146,20 @@ function main() {
         positions.push(...a.slice(0, 3));
         positions.push(...b.slice(0, 3));
         positions.push(...c.slice(0, 3));
+
+        const u = vec3.subtract([], b, a);
+        const v = vec3.subtract([], c, a);
+        const normal = vec3.normalize([], vec3.cross([], u, v));
+
+        normals.push(...normal);
+        normals.push(...normal);
+        normals.push(...normal);
     }
+    // function triangle(a, b, c) {
+    //     positions.push(...a.slice(0, 3));
+    //     positions.push(...b.slice(0, 3));
+    //     positions.push(...c.slice(0, 3));
+    // }
 
     function mix(u, v, t) {
         return [
