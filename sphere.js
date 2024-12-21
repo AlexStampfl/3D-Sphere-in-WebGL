@@ -72,6 +72,7 @@ function main() {
             vec3 copperColor = vec3(0.8, 0.5, 0.3);
             float brightness = 1.5; // Increase brightness
             gl_FragColor = vec4(vLighting * copperColor, 1.0);
+            // vLighting = max(vLighting, vec3(0.2, 0.2, 0.2)); // Ensure a minimum brightness
 }
     `;
 
@@ -163,7 +164,7 @@ function main() {
         const modelViewMatrix = mat4.create();
         mat4.translate(modelViewMatrix, modelViewMatrix, [0.0, 0.0, -radius]); // change sphere size
         // mat4.translate(modelViewMatrix, modelViewMatrix, [0.0, 0.0, -5.0]);
-        mat4.rotateY(modelViewMatrix, modelViewMatrix, theta); // spins sphere around
+        mat4.rotateY(modelViewMatrix, modelViewMatrix, angle + theta); // spins sphere around
         // mat4.rotateY(modelViewMatrix, modelViewMatrix, angle);
         mat4.rotateX(modelViewMatrix, modelViewMatrix, phi); // tils sphere slightly
         angle += 0.002; // adjust speed of rotation
@@ -258,4 +259,3 @@ function main() {
         return shader
     }
 }
-    
