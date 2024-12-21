@@ -74,12 +74,25 @@ function main() {
     const aVertexPosition = gl.getAttribLocation(shaderProgram, "aVertexPosition");
     gl.vertexAttribPointer(aVertexPosition, 3, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(aVertexPosition);
+
     const projectionMatrix = mat4.create();
-    mat4.perspective(projectionMatrix, Math.PI / 4, canvas.width / canvas.height, 0.1, 10.0);
+    mat4.perspective(projectionMatrix, 
+        Math.PI / 4, // Field of view (45 degrees)
+        canvas.width / canvas.height, // Aspect ratio
+        0.1, // Near clipping plane
+        100.0 // Far clippng plane
+    );
+
+    // positions the object in the world, move world in opposite direciton of where camera is looking
     const modelViewMatrix = mat4.create();
-    mat4.translate(modelViewMatrix, modelViewMatrix, [0.0, 0.0, -4.0]); // move object back to visibility
+    mat4.translate(modelViewMatrix, modelViewMatrix, [0.0, 0.0, -5.0]); // Dial object back
+    mat4.rotateY(modelViewMatrix, modelViewMatrix, Math.PI / 4); // Rotate camera
+
+    // To simulate camera movement, rotation for panning and translation for moving camera
+
     const uModelViewMatrix = gl.getUniformLocation(shaderProgram, "uModelViewMatrix");
     const uProjectionMatrix = gl.getUniformLocation(shaderProgram, "uProjectionMatrix");
+    
     gl.uniformMatrix4fv(uModelViewMatrix, false, modelViewMatrix);
     gl.uniformMatrix4fv(uProjectionMatrix, false, projectionMatrix);
 
