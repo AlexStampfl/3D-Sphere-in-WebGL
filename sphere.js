@@ -14,6 +14,27 @@ function main() {
     gl.viewport(0, 0, canvas.width, canvas.height);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+    // Define global variables
+    let radius = 6;
+    let theta = 45 * (Math.PI / 180);
+    let phi = 6 * (Math.PI / 180);
+    let subDiv = 4;
+
+    // Update radius, theta, phi & subdivisions
+    document.getElementById("radiusSlider").addEventListener("input", (e) => {
+        radius = parseFloat(e.target.value);
+    });
+    document.getElementById("thetaSlider").addEventListener("input", (e) => {
+        theta = parseFloat(e.target.value) * Math.PI / 180;
+    });
+    document.getElementById("phiSlider").addEventListener("input", (e) => {
+        phi = parseFloat(e.target.value) * Math.PI / 180;
+    });
+    document.getElementById("subSlider").addEventListener("input", (e) => {
+        subDiv = parseInt(e.target.value);
+        updateGeometry(); // Recalculate geometry
+    })
+
 
 
     // Vertex Shader
@@ -142,7 +163,7 @@ function main() {
         const modelViewMatrix = mat4.create();
         mat4.translate(modelViewMatrix, modelViewMatrix, [0.0, 0.0, -5.0]);
         mat4.rotateY(modelViewMatrix, modelViewMatrix, angle);
-        angle += 0.01;
+        angle += 0.002; // adjust speed of rotation
     
         const normalMatrix = mat3.create();
         mat3.normalFromMat4(normalMatrix, modelViewMatrix);
@@ -154,6 +175,15 @@ function main() {
         gl.drawArrays(gl.TRIANGLES, 0, positions.length / 3);
     
         requestAnimationFrame(render);
+    }
+    
+    function updateGeometry() {
+        positions.length = 0;
+        normals.length = 0;
+        tetrahedron(va, vb, vc, vd, subDiv);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
     }
     // Start rendering
     render();
