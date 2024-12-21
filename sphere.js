@@ -161,8 +161,11 @@ function main() {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     
         const modelViewMatrix = mat4.create();
-        mat4.translate(modelViewMatrix, modelViewMatrix, [0.0, 0.0, -5.0]);
-        mat4.rotateY(modelViewMatrix, modelViewMatrix, angle);
+        mat4.translate(modelViewMatrix, modelViewMatrix, [0.0, 0.0, -radius]); // change sphere size
+        // mat4.translate(modelViewMatrix, modelViewMatrix, [0.0, 0.0, -5.0]);
+        mat4.rotateY(modelViewMatrix, modelViewMatrix, theta); // spins sphere around
+        // mat4.rotateY(modelViewMatrix, modelViewMatrix, angle);
+        mat4.rotateX(modelViewMatrix, modelViewMatrix, phi); // tils sphere slightly
         angle += 0.002; // adjust speed of rotation
     
         const normalMatrix = mat3.create();
