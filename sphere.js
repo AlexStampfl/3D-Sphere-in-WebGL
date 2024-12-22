@@ -5,7 +5,7 @@ function main() {
     const gl = can.getContext("webgl");
 
     if (!gl) {
-        alert("Unable to initialize WebGL.");
+        alert("Not able to start WebGL.");
         return;
     }
 
@@ -18,51 +18,52 @@ function main() {
     let theta = 45 * (Math.PI / 180);
     let phi = 6 * (Math.PI / 180);
     let subDiv = 4;
-    let isPaused = false;
+    let isHalted = false;
 
-    // Update radius, theta, phi & subdivisions
-    document.getElementById("radSlider").addEventListener("input", (e) => {
-        rad = parseFloat(e.target.value);
-    });
-    document.getElementById("thetaSlider").addEventListener("input", (e) => {
-        theta = parseFloat(e.target.value) * Math.PI / 180;
-    });
-    document.getElementById("phiSlider").addEventListener("input", (e) => {
-        phi = parseFloat(e.target.value) * Math.PI / 180;
-    });
-    document.getElementById("subDiv").addEventListener("input", (e) => {
-        subDiv = parseInt(e.target.value);
-        updateGeo();
-    })
-    document.getElementById("haltBtn").addEventListener("click", () => {
-        isPaused = true;
-    });
-    document.getElementById("spinBtn").addEventListener("click", () => {
-        isPaused = false;
-    })
+    function Sliders() {
+        document.getElementById("radSlider").addEventListener("input", (e) => {
+            rad = parseFloat(e.target.value);
+        });
+        document.getElementById("thetaSlider").addEventListener("input", (e) => {
+            theta = parseFloat(e.target.value) * Math.PI / 180;
+        });
+        document.getElementById("phiSlider").addEventListener("input", (e) => {
+            phi = parseFloat(e.target.value) * Math.PI / 180;
+        });
+        document.getElementById("subDiv").addEventListener("input", (e) => {
+            subDiv = parseInt(e.target.value);
+            updateGeo();
+        })
+        document.getElementById("haltBtn").addEventListener("click", () => {
+            isHalted = true;
+        });
+        document.getElementById("spinBtn").addEventListener("click", () => {
+            isHalted = false;
+        })
+    }
 
     const vShade = `
         attribute vec3 avPos;
         attribute vec3 aNorm;
 
-        uniform mat4 uModelViewMatrix;
+        uniform mat4 umVM;
         uniform mat4 uProjMatrix;
         uniform mat3 uNormalMatrix;
 
         varying vec3 vLighting;
 
         void main() {
-        vec3 transformedNormal = normalize(uNormalMatrix * aNorm);
+        vec3 transNorm = normalize(uNormalMatrix * aNorm);
         vec3 lightDirection = normalize(vec3(-5.0, -5.0, -10.0)); // change light direction
         
-        float directional = max(dot(transformedNormal, lightDirection), 0.0);
+        float directional = max(dot(transNorm, lightDirection), 0.0);
          
         vec3 ambientLight = vec3(0.5, 0.5, 0.5);
         // vec3 ambientLight = vec3(0.3, 0.3, 0.3);
         vec3 directionalLight = vec3(1.0, 1.0, 1.0) * directional;
         vLighting = ambientLight + directionalLight;
 
-        gl_Position = uProjMatrix * uModelViewMatrix * vec4(avPos, 1.0);
+        gl_Position = uProjMatrix * umVM * vec4(avPos, 1.0);
 }
     `;
 
@@ -107,69 +108,75 @@ function main() {
     // Recursively divide tetrahedron
     tetra(va, vb, vc, vd, numsToSubdiv);
 
-    const normalBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(norms), gl.STATIC_DRAW);
+    function myBuffers(gl, shaderProgram, positions, norms, can) 
+    {
+        const normBuff = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, normBuff);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(norms), gl.STATIC_DRAW);
+        
+        const aNorm = gl.getAttribLocation(shaderProgram, "aNorm");
+        gl.vertexAttribPointer(aNorm, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(aNorm);
     
-    const aNorm = gl.getAttribLocation(shaderProgram, "aNorm");
-    gl.vertexAttribPointer(aNorm, 3, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(aNorm);
-
-    // Create buffer
-    const posBuff = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, posBuff);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
-
-    const uNormalMatrix = gl.getUniformLocation(shaderProgram, "uNormalMatrix");
-
-    // Set up shader attributes and uniforms
-    const aVPos = gl.getAttribLocation(shaderProgram, "avPos");
-    if (aVPos === -1) {
-        console.error("Attribute avPos not found in the shader program.");
-    } else {
+        // Create buffer
+        const posBuff = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, posBuff);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+    
+        // Set up shader attributes and uniforms
+        const aVPos = gl.getAttribLocation(shaderProgram, "avPos");
+        if (aVPos === -1) {
+            console.error("Attribute avPos not found in the shader program.");
+        } else {
+            gl.vertexAttribPointer(aVPos, 3, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(aVPos);
+        }
+        
         gl.vertexAttribPointer(aVPos, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(aVPos);
+        
+        const projMatrix = mat4.create();
+        mat4.perspective(projMatrix, 
+            Math.PI / 4, // Field of view (45 degrees)
+            can.width / can.height, // Aspect ratio
+            0.1, // Near clipping plane
+            100.0 // Far clippng plane
+        );
+        const uProjMatrix = gl.getUniformLocation(shaderProgram, "uProjMatrix");
+        gl.uniformMatrix4fv(uProjMatrix, false, projMatrix);
+        
+        const umVM = gl.getUniformLocation(shaderProgram, "umVM");
+        const uNormalMatrix = gl.getUniformLocation(shaderProgram, "uNormalMatrix");
+
+        return { posBuff, normBuff, uProjMatrix, umVM, uNormalMatrix};
     }
-
-    gl.vertexAttribPointer(aVPos, 3, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(aVPos);
-
-    const projMatrix = mat4.create();
-    mat4.perspective(projMatrix, 
-        Math.PI / 4, // Field of view (45 degrees)
-        can.width / can.height, // Aspect ratio
-        0.1, // Near clipping plane
-        100.0 // Far clippng plane
-    );
-    const uProjMatrix = gl.getUniformLocation(shaderProgram, "uProjMatrix");
-    gl.uniformMatrix4fv(uProjMatrix, false, projMatrix);
-
-    const uModelViewMatrix = gl.getUniformLocation(shaderProgram, "uModelViewMatrix");
-
+    
+    const buffers = myBuffers(gl, shaderProgram, positions, norms, can);
+    const { posBuff, normBuff, uProjMatrix, umVM, uNormalMatrix } = buffers;
+    
     let angle = 0;
 
-    // Render function
     function rend() {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     
-        const modelViewMatrix = mat4.create();
-        mat4.translate(modelViewMatrix, modelViewMatrix, [0.0, 0.0, -rad]); // change sphere size
+        const mVM = mat4.create();
+        mat4.translate(mVM, mVM, [0.0, 0.0, -rad]); // change sphere size
 
-        if (!isPaused) {
+        if (!isHalted) {
             angle += 0.001; // only update angle when not paused
         }
 
-        mat4.rotateY(modelViewMatrix, modelViewMatrix, angle + theta); // spins sphere around
-        mat4.rotateX(modelViewMatrix, modelViewMatrix, phi); // tils sphere slightly
+        mat4.rotateY(mVM, mVM, angle + theta); // spins sphere around
+        mat4.rotateX(mVM, mVM, phi); // tils sphere slightly
         angle += 0.0005; // adjust speed of rotation
 
         const normalMatrix = mat3.create();
-        mat3.normalFromMat4(normalMatrix, modelViewMatrix);
+        mat3.normalFromMat4(normalMatrix, mVM);
     
         const uNormalMatrix = gl.getUniformLocation(shaderProgram, "uNormalMatrix");
         gl.uniformMatrix3fv(uNormalMatrix, false, normalMatrix);
     
-        gl.uniformMatrix4fv(uModelViewMatrix, false, modelViewMatrix);
+        gl.uniformMatrix4fv(umVM, false, mVM);
         gl.drawArrays(gl.TRIANGLES, 0, positions.length / 3);
     
         requestAnimationFrame(rend);
@@ -185,6 +192,7 @@ function main() {
     }
     // Start rendering
     rend();
+    Sliders();
     
     function tetra(a, b, c, d, n) {
         divTri(a, b, c, n);
@@ -195,9 +203,9 @@ function main() {
 
     function divTri(a, b, c, level) {
         if (level > 0) {
-            const midAB = normalize(weightedAverage(a, b, 0.5), false);
-            const midAC = normalize(weightedAverage(a, c, 0.5), false);
-            const midBC = normalize(weightedAverage(b, c, 0.5), false);
+            const midAB = normalize(weightedAvg(a, b, 0.5), false);
+            const midAC = normalize(weightedAvg(a, c, 0.5), false);
+            const midBC = normalize(weightedAvg(b, c, 0.5), false);
 
             // Recursively subdivide
             divTri(a, midAB, midAC, level - 1);
@@ -223,7 +231,7 @@ function main() {
         norms.push(...normal);
     }
 
-    function weightedAverage(u, v, weight) {
+    function weightedAvg(u, v, weight) {
         return [
             u[0] * (1 - weight) + v[0] * weight,
             u[1] * (1 - weight) + v[1] * weight,
