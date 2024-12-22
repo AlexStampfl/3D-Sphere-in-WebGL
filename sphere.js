@@ -1,8 +1,8 @@
 main();
 
 function main() {
-    const canvas = document.querySelector("#gl-canvas");
-    const gl = canvas.getContext("webgl");
+    const can = document.getElementById("gl-canvas");
+    const gl = can.getContext("webgl");
 
     if (!gl) {
         alert("Unable to initialize WebGL.");
@@ -10,12 +10,10 @@ function main() {
     }
 
     gl.clearColor(0.3, 0.0, 0.0, 1.0);
-    // gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.enable(gl.DEPTH_TEST);
-    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.viewport(0, 0, can.width, can.height);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    // Define global variables
     let rad = 6;
     let theta = 45 * (Math.PI / 180);
     let phi = 6 * (Math.PI / 180);
@@ -43,10 +41,7 @@ function main() {
         isPaused = false;
     })
 
-
-
-    // Vertex Shader
-    const vertexShader = `
+    const vShade = `
         attribute vec3 avPos;
         attribute vec3 aNorm;
 
@@ -68,11 +63,10 @@ function main() {
         vLighting = ambientLight + directionalLight;
 
         gl_Position = uProjMatrix * uModelViewMatrix * vec4(avPos, 1.0);
-
 }
     `;
 
-    const fragmentShader = `
+    const fShade = `
         precision mediump float;
         varying vec3 vLighting;
 
@@ -80,13 +74,12 @@ function main() {
             vec3 copperColor = vec3(0.8, 0.5, 0.3);
             float brightness = 1.5; // Increase brightness
             gl_FragColor = vec4(vLighting * copperColor, 1.0);
-
 }
     `;
 
     // Compile shaders
-    const vShader = compileShad(gl, gl.VERTEX_SHADER, vertexShader);
-    const fShader = compileShad(gl, gl.FRAGMENT_SHADER, fragmentShader);
+    const vShader = compileShad(gl, gl.VERTEX_SHADER, vShade);
+    const fShader = compileShad(gl, gl.FRAGMENT_SHADER, fShade);
 
     // Link shaders into program
     const shaderProgram = gl.createProgram();
@@ -107,7 +100,6 @@ function main() {
     const vc = [-0.816497, -0.471405, 0.333333];
     const vd = [0.816497, -0.471405, 0.333333];
 
-    // Array to store positions
     const positions = [];
     const norms = [];
     const numsToSubdiv = 4;
@@ -120,12 +112,6 @@ function main() {
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(norms), gl.STATIC_DRAW);
     
     const aNorm = gl.getAttribLocation(shaderProgram, "aNorm");
-    if (aNorm === -1) {
-        console.error("Attribute aNorm not found in shader program.")
-    } else {
-        gl.vertexAttribPointer(aNorm, 3, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(aNorm);
-    }
     gl.vertexAttribPointer(aNorm, 3, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(aNorm);
 
@@ -135,9 +121,6 @@ function main() {
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 
     const uNormalMatrix = gl.getUniformLocation(shaderProgram, "uNormalMatrix");
-    if (!uNormalMatrix) {
-    console.error("Uniform uNormalMatrix not found in the shader program.");
-    }
 
     // Set up shader attributes and uniforms
     const aVPos = gl.getAttribLocation(shaderProgram, "avPos");
@@ -154,7 +137,7 @@ function main() {
     const projMatrix = mat4.create();
     mat4.perspective(projMatrix, 
         Math.PI / 4, // Field of view (45 degrees)
-        canvas.width / canvas.height, // Aspect ratio
+        can.width / can.height, // Aspect ratio
         0.1, // Near clipping plane
         100.0 // Far clippng plane
     );
@@ -180,8 +163,6 @@ function main() {
         mat4.rotateX(modelViewMatrix, modelViewMatrix, phi); // tils sphere slightly
         angle += 0.0005; // adjust speed of rotation
 
-
-    
         const normalMatrix = mat3.create();
         mat3.normalFromMat4(normalMatrix, modelViewMatrix);
     
